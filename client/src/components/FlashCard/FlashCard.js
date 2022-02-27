@@ -6,7 +6,7 @@ function FlashCard() {
         <div className="card">
             <img src='http://placekitten.com/200/300' />
             <p>
-            random content
+                random content
             </p>
         </div>
     )
