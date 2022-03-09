@@ -15,7 +15,8 @@ const register = async (req, res) => {
 
   try {
     const existingUser = await User.findOne({ email: req.body.email })
-    console.log(`Existing user ${existingUser}`)
+    console.log(`Existing userhello ${existingUser} `)
+    console.log(`telepotato ${req.body.password}`)
     if (existingUser) {
       res.status(400).send('That email is already registered')
     } else {
