@@ -1,92 +1,77 @@
 import { Router } from 'express'
-import { validationResult } from 'express-validator'
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
 import { User } from '../models/user.js'
 
-const authRouter = Router()
+const usersRouter = Router()
 
-const register = async (req, res) => {
-  const validationResults = validationResult(req)
-  if (!validationResults.isEmpty()) {
-    console.log(`Validation failed ${validationResult}`)
-    res.status(400).send('Payload invalid')
-  }
-
-  try {
-    const existingUser = await User.findOne({ email: req.body.email })
-    console.log(`Existing userhello ${existingUser} `)
-    console.log(`telepotato ${req.body.password}`)
-    if (existingUser) {
-      res.status(400).send('That email is already registered')
-    } else {
-      const newUser = req.body
-      // We create an encrypted string that represents the password but
-      // is not the same as the password. This may only be decoded
-      // here with these tools
-      newUser.password = await bcrypt.hash(req.body.password, 10)
-      const savedUser = await User.create(newUser)
-      res.status(200).send(savedUser._id)
-    }
-  } catch (err) {
-    console.log(`User creation failed: ${err}`)
-    res.status(502).send('User creation failed')
-  }
+function sanitizeUsers(users) {
+  const sanitizedUsers = users.map((user) => ({
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    decks: user.decks,
+    active: user.active
+  }))
+  return sanitizedUsers
 }
 
-async function login(req, res) {
-  const validationResults = validationResult(req)
-  if (!validationResults.isEmpty()) {
-    console.log(`Validation failed ${validationResult}`)
-    res.status(400).send('Payload invalid')
-  }
-
-  const creds = req.body
-
-  try {
-    const existingUser = await User.findOne({ email: creds.email })
-
-    if (!existingUser) {
-      res.status(404).send('No user found')
-    } else {
-      const passwordComparison = await bcrypt.compare(creds.password, existingUser.password)
-      if (!passwordComparison) {
-        res.status(401).send('Username or password are invalid')
-      } else {
-        const payload = {
-          user: existingUser._id,
-          otherData: 'for-example'
-        }
-        const token = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 86400 })
-        res.status(200).send({
-          expiresIn: 86400,
-          token: `Bearer ${token}`
-        })
-      }
-    }
-  } catch (err) {
-    console.log(`User login failed: ${err}`)
-    res.status(502).send('There was an error in login')
-  }
-}
-
-authRouter.post('/login', login)
-authRouter.post('/register', register)
-
-export default authRouter
-
-export const verifyToken = async (req, res, next) => {
-  const authParts = req.headers.authorization.split(' ')
-  if (authParts[0] !== 'Bearer' || authParts.length < 2) {
-    res.status(400).send('Bad authentication token')
-  } else if (authParts[1]) {
-    const decoded = await jwt.verify(authParts[1], process.env.JWT_SECRET)
-    req.user = {
-      userId: decoded.user,
-      other: decoded.otherData
-    }
-    next()
+const getUsers = async (req, res) => {
+  const { userId } = req.user
+  const requestor = await User.findById(userId)
+  if (requestor.role[0] === 'admin' || requestor.role[0] === 'superuser') {
+    const users = await User.find({})
+    res.status(201).send(sanitizeUsers(users))
   } else {
-    res.status(401).send('Authentication failed')
+    res.status(403).send('Forbidden')
   }
 }
+
+const getUsersById = async (req, res) => {
+  const { userId } = req.user
+  const requestor = await User.findById(userId)
+  if (requestor.role[0] === 'admin' || requestor.role[0] === 'superuser') {
+    const result = await User.findById(req.params.id)
+    res.status(201).send(result)
+  } else {
+    res.status(403).send('Forbidden')
+  }
+}
+
+const updateUser = async (req, res) => {
+  const { userId } = req.user
+  const requestor = await User.findById(userId)
+  if (requestor.role[0] === 'admin') {
+    const result = await User.findByIdAndUpdate(req.params.id, req.body)
+    res.status(201).send(`User updated ${result}`)
+  } else if (req.params.id === userId && requestor.role[0] === 'superuser') {
+    const result = await User.findByIdAndUpdate(req.params.id, req.body)
+    res.status(201).send(`User updated ${result}`)
+  } else {
+    res.status(403).send('Forbidden')
+  }
+}
+
+const deleteUser = async (req, res) => {
+  const { userId } = req.user
+  const requestor = await User.findById(userId)
+  const user = await User.findById(req.params.id)
+  if (requestor.role[0] === 'admin') {
+    const result = await User.findByIdAndDelete(req.params.id)
+    res.status(201).send(`User deleted ${result}`)
+  } else if (requestor.role[0] === 'superuser' && user === userId) {
+    const result = await User.findByIdAndDelete(req.params.id)
+    res.status(201).send(`User deleted ${result}`)
+  } else if (requestor.role[0] === 'user' && req.params.id === userId) {
+    const result = await User.findByIdAndUpdate(req.params.id, { active: false })
+    res.status(201).send(`User deactivated ${result}`)
+  } else {
+    res.status(403).send('Forbidden')
+  }
+}
+
+usersRouter.get('/', getUsers)
+usersRouter.get('/:id', getUsersById)
+usersRouter.put('/:id', updateUser)
+usersRouter.delete('/:id', deleteUser)
+
+export default usersRouter
