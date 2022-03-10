@@ -29,7 +29,10 @@ const getUsers = async (req, res) => {
 const getUsersById = async (req, res) => {
   const { userId } = req.user
   const requestor = await User.findById(userId)
-  if (requestor.role[0] === 'admin' || requestor.role[0] === 'superuser') {
+  if (requestor.role[0] === 'superuser' || requestor.role[0] === 'admin') {
+    const result = await User.findById(req.params.id)
+    res.status(201).send(result)
+  } else if (requestor.role[0] === 'user' || req.params.id === userId) {
     const result = await User.findById(req.params.id)
     res.status(201).send(result)
   } else {
@@ -43,7 +46,7 @@ const updateUser = async (req, res) => {
   if (requestor.role[0] === 'admin') {
     const result = await User.findByIdAndUpdate(req.params.id, req.body)
     res.status(201).send(`User updated ${result}`)
-  } else if (req.params.id === userId && requestor.role[0] === 'superuser') {
+  } else if (requestor.role[0] === 'superuser' || req.params.id === userId) {
     const result = await User.findByIdAndUpdate(req.params.id, req.body)
     res.status(201).send(`User updated ${result}`)
   } else {
