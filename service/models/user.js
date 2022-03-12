@@ -30,7 +30,8 @@ const UserSchema = new mongoose.Schema({
   },
   password: { type: String, required: true },
   decks: [DeckSchema],
-  active: { type: Boolean, default: true }
+  active: { type: Boolean, default: true },
+  role: { type: String, enum: ['user', 'superuser', 'admin'], default: 'user' }
 })
 
 export const User = mongoose.model('User', UserSchema)
