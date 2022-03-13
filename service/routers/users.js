@@ -18,9 +18,9 @@ function sanitizeUsers(users) {
 const getUsers = async (req, res) => {
   const { userId } = req.user
   const requestor = await User.findById(userId)
-  if (requestor.role[0] === 'admin' || requestor.role[0] === 'superuser') {
+  if (requestor.role === 'admin' || requestor.role === 'superuser') {
     const users = await User.find({})
-    res.status(201).send(sanitizeUsers(users))
+    res.send(sanitizeUsers(users))
   } else {
     res.status(403).send('Forbidden')
   }
@@ -29,12 +29,10 @@ const getUsers = async (req, res) => {
 const getUsersById = async (req, res) => {
   const { userId } = req.user
   const requestor = await User.findById(userId)
-  if (requestor.role[0] === 'superuser' || requestor.role[0] === 'admin') {
-    const result = await User.findById(req.params.id)
-    res.status(201).send(result)
-  } else if (requestor.role[0] === 'user' || req.params.id === userId) {
-    const result = await User.findById(req.params.id)
-    res.status(201).send(result)
+  if (requestor.role === 'superuser' || requestor.role === 'admin' || requestor._id.toString() === req.params.id.toString()) {
+    const user = await User.findById(req.params.id)
+    const arr = sanitizeUsers([user])
+    res.send(arr[0])
   } else {
     res.status(403).send('Forbidden')
   }
@@ -43,12 +41,14 @@ const getUsersById = async (req, res) => {
 const updateUser = async (req, res) => {
   const { userId } = req.user
   const requestor = await User.findById(userId)
-  if (requestor.role[0] === 'admin') {
-    const result = await User.findByIdAndUpdate(req.params.id, req.body)
-    res.status(201).send(`User updated ${result}`)
-  } else if (requestor.role[0] === 'superuser' || req.params.id === userId) {
-    const result = await User.findByIdAndUpdate(req.params.id, req.body)
-    res.status(201).send(`User updated ${result}`)
+  if (requestor.role === 'admin') {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body)
+    const arr = sanitizeUsers([user])
+    res.send(arr[0])
+  } else if (requestor.role === 'superuser' || requestor._id.toString() === req.params.id.toString()) {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body)
+    const arr = sanitizeUsers([user])
+    res.send(arr[0])
   } else {
     res.status(403).send('Forbidden')
   }
@@ -58,15 +58,18 @@ const deleteUser = async (req, res) => {
   const { userId } = req.user
   const requestor = await User.findById(userId)
   const user = await User.findById(req.params.id)
-  if (requestor.role[0] === 'admin') {
-    const result = await User.findByIdAndDelete(req.params.id)
-    res.status(201).send(`User deleted ${result}`)
-  } else if (requestor.role[0] === 'superuser' && user === userId) {
-    const result = await User.findByIdAndDelete(req.params.id)
-    res.status(201).send(`User deleted ${result}`)
-  } else if (requestor.role[0] === 'user' && req.params.id === userId) {
-    const result = await User.findByIdAndUpdate(req.params.id, { active: false })
-    res.status(201).send(`User deactivated ${result}`)
+  if (requestor.role === 'admin') {
+    const deletedUser = await User.findByIdAndDelete(req.params.id)
+    const arr = sanitizeUsers([deletedUser])
+    res.send(arr[0])
+  } else if (requestor.role === 'superuser' && user === userId) {
+    const deletedUser = await User.findByIdAndDelete(req.params.id)
+    const arr = sanitizeUsers([deletedUser])
+    res.send(arr[0])
+  } else if (requestor.role === 'user' && req.params.id === userId) {
+    const deactivatedUser = await User.findByIdAndUpdate(req.params.id, { active: false })
+    const arr = sanitizeUsers([deactivatedUser])
+    res.send(arr[0])
   } else {
     res.status(403).send('Forbidden')
   }
