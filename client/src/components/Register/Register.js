@@ -1,16 +1,34 @@
 import React from 'react'
 import { Button, Box, TextField, Typography } from '@mui/material'
+import { useAuth } from '../Auth/AuthProvider'
+import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 
 const Register = () => {
-  // Assignment: use the useAuth hook here to handle registering a new user
+  const { auth, register } = useAuth()
+  const navigate = useNavigate()
+  let location = useLocation()
+
+  const source = location.state?.from?.pathname || "/login"
+
   const handleSubmit = (event) => {
     event.preventDefault()
+
     const data = new FormData(event.currentTarget)
     console.log({
+      firstName: data.get('firstName'),
+      lastName: data.get('lastName'),
       email: data.get('email'),
-      password: data.get('password'),
+      password: data.get('password')
+    })
+    register(data.get('firstName'), data.get('lastName'), data.get('email'), data.get('password'), () => {
+      navigate(source, { replace: true })
     })
   }
+
+  if (auth) {
+    return <Navigate to={source} />
+  }
+
 
   return (
     <Box
@@ -25,6 +43,26 @@ const Register = () => {
         Register
       </Typography>
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+      <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="firstName"
+          label="First Name"
+          name="firstName"
+          autoComplete="firstName"
+          autoFocus
+        />
+      <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="lastName"
+          label="Last Name"
+          name="lastName"
+          autoComplete="lastName"
+          autoFocus
+        />
         <TextField
           margin="normal"
           required
@@ -51,7 +89,7 @@ const Register = () => {
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
         >
-          Sign In
+          Sign Up
         </Button>
       </Box>
     </Box>

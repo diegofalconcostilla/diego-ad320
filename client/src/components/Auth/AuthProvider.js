@@ -25,8 +25,19 @@ const AuthProvider = ({ children }) => {
         }
     }
 
-    const register = (email, password, callback) => { 
-        // Assignment: how do we register someone?  
+    const register = async (firstName, lastName, email, password, callback) => {  
+        try{
+            const registerResponse = await axios.post(
+                'http://localhost:8000/auth/register', 
+                { firstName: firstName, lastName: lastName, email: email, password: password }, 
+                { 'content-type': 'application/json' }
+            )
+            console.log(registerResponse)
+            callback()
+        } catch (err) {
+            console.log(`Login error ${err}`)
+            // Assignment: what should we do if this fails?
+        }
     }
 
     const authCtx = {
