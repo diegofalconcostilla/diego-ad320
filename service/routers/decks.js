@@ -21,10 +21,12 @@ const getDecks = async (req, res) => {
 }
 
 const createDeck = async (req, res) => {
-  const userId = ''
+  const userId = req.user
   const newDeck = req.body
+  console.log(newDeck)
   try {
     const user = await User.findById(userId)
+    console.log(user)
     user.decks.push({
       name: newDeck.name,
       cards: []

@@ -39,17 +39,36 @@ const getUsersById = async (req, res) => {
   }
 }
 
-// These routes will remain partially completed for the rest of the course.
 const updateUser = async (req, res) => {
-  const result = await User.findByIdAndUpdate(req.params.id, req.body)
-  console.log('result ', result)
-  res.sendStatus(503)
+  const { userId } = req.user
+  const requestor = await User.findById(userId)
+  if (requestor.role === 'admin') {
+    const result = await User.findByIdAndUpdate(req.params.id, req.body)
+    res.status(201).send(`User updated ${result}`)
+  } else if (requestor.role === 'superuser' || req.params.id === userId) {
+    const result = await User.findByIdAndUpdate(req.params.id, req.body)
+    res.status(201).send(`User updated ${result}`)
+  } else {
+    res.status(403).send('Forbidden')
+  }
 }
 
 const deleteUser = async (req, res) => {
-  const result = await User.findByIdAndUpdate(req.params.id, { active: false })
-  console.log('result ', result)
-  res.sendStatus(503)
+  const { userId } = req.user
+  const requestor = await User.findById(userId)
+  const user = await User.findById(req.params.id)
+  if (requestor.role === 'admin') {
+    const result = await User.findByIdAndDelete(req.params.id)
+    res.status(201).send(`User deleted ${result}`)
+  } else if (requestor.role === 'superuser' && user === userId) {
+    const result = await User.findByIdAndDelete(req.params.id)
+    res.status(201).send(`User deleted ${result}`)
+  } else if (requestor.role === 'user' && req.params.id === userId) {
+    const result = await User.findByIdAndUpdate(req.params.id, { active: false })
+    res.status(201).send(`User deactivated ${result}`)
+  } else {
+    res.status(403).send('Forbidden')
+  }
 }
 
 usersRouter.get('/', getUsers)
