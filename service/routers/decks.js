@@ -5,8 +5,7 @@ import { User } from '../models/user.js'
 const decksRouter = Router()
 
 const getDecks = async (req, res) => {
-  const { userId, other } = req.user
-  console.log(`Other data from the token ${other}`)
+  const { userId } = req.user
   try {
     const user = await User.findById(userId)
     if (user) {
