@@ -1,152 +1,150 @@
-import React, { useState } from "react"
-import { Button, Stack, TextField } from "@mui/material"
+import React, {useEffect, useState} from "react"
+import { Button, Stack, TextField, Container, MenuItem } from "@mui/material"
 import axios from 'axios'
+import { useAuth } from "../Auth/AuthProvider"
+import jwt from 'jwt-decode'
 
-const CreateFlashcard = ({ userId, deckId }) => {
-    console.log(`[CreateFlashcard] deckId is ${deckId}`)
-    const [formValue, setFormValue] = useState({})
-    const [errors, setErrors] = useState({
-        frontImage: null,
-        frontText: null,
-        backImage: null,
-        backText: null
-    })
+const CreateFlashcard = () => {
+  const { token } = useAuth()
+  const [formValue, setFormValue] = useState({})
+  const [formErrors, setFormErrors] = useState({
+    frontImage: false,
+    backImage: false,
+    frontText: false,
+    backText: false
+  })
+  const [decks, setDecks] = useState(null)
 
-    function validateProperty(fieldName, fieldValue) {
-        const fieldValueTrimmed = fieldValue.trim()
-        if (fieldValueTrimmed === '') {
-            return `Field can't be empty`
-        }
-        if (fieldName === "frontImage" || fieldName === "backImage") {
-            const urlValidation = fieldValue.match((/(http(s)?:\/\/.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g))
-            if (urlValidation == null) {
-                return `Field url is invalid`
-            }
-        }
-
-        return null
+  useEffect(() => {
+    if (token) {
+      const decoded = jwt(token)
+      axios.get(`http://localhost:8000/users/${decoded.user}`, { headers: { authorization: `Bearer ${token}` }}).then((response) => {
+        const userDecks = response.data.decks.map((deck) => {
+          return {
+            id: deck._id,
+            name: deck.name
+          }
+        })
+        setDecks(userDecks)
+        setFormValue(f => f.deck = userDecks[0].id)
+      })
     }
+  }, [token])
 
-    const handleChange = (event) => {
-        event.preventDefault()
-        console.log("[CreateFlashcard] onChange ", event)
-        const validation = validateProperty(event.target.name, event.target.value)
-        if (validation !== null) {
-            const fieldName = event.target.name
-            switch (fieldName) {
-                case 'frontImage':
-                    setErrors({ ...errors, frontImage: validation })
-                    break;
-                case 'frontText':
-                    setErrors({ ...errors, frontText: validation })
-                    break;
-                case 'backImage':
-                    setErrors({ ...errors, backImage: validation })
-                    break;
-                case 'backText':
-                    setErrors({ ...errors, backText: validation })
-                    break;
-                default:
-                    break;
-            }
+  const isURL = (value) => {
+    const re = /[(http(s)?)://(www.)?a-zA-Z0-9@:%._+~#=]{2,256}.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/
+    return re.test(value)
+  }
+
+  const isNotEmpty = (value) => {
+    const trimmed = value.trim()
+    return trimmed !== ""
+  }
+
+  const validate = (field, value) => {
+    const validations = {
+      frontImage: isURL,
+      backImage: isURL,
+      frontText: isNotEmpty,
+      backText: isNotEmpty,
+      deck: (v) => { return true }
+    }
     
-        } else {
-            const fieldName = event.target.name
-            switch (fieldName) {
-                case 'frontImage':
-                    setErrors({ ...errors, frontImage: null })
-                    break;
-                case 'frontText':
-                    setErrors({ ...errors, frontText: null })
-                    break;
-                case 'backImage':
-                    setErrors({ ...errors, backImage: null })
-                    break;
-                case 'backText':
-                    setErrors({ ...errors, backText: null })
-                    break;
-                default:
-                    break;
-            }
-            const currentValues = formValue
-            currentValues[event.target.name] = event.target.value
-            
-            setFormValue(currentValues)
-        }
-    }
+    return validations[field](value)
+  }
 
-    const handleSubmit = async (event) => {
-        console.log("[CreateFlashcard] onSubmit ", event)
-        event.preventDefault()
-        try {
-            const response = await axios.post(`http://localhost:8000/decks/${deckId}/cards`, formValue, { headers: { user: userId } })
-            console.log(`[createflashcard] response submit ${response.status}`)
-        } catch (err) {
-            console.log(`response error ${err.status}`)
-        }
-    }
+  const handleChange = (event) => {
+    // TIL there are ways to use functions to accomplish state change
+    setFormValue(f => ({
+      ...f,
+      [event.target.name]: event.target.value
+    }))
 
-    return (
-        <Stack component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <span>Form values: {formValue.frontText} &amp; {formValue.backText}</span>
-            <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="frontImage"
-                label="Front Image"
-                name="frontImage"
-                onChange={handleChange}
-                autoFocus
-                error={errors.frontImage !== null}
-            />
-            {errors.frontImage !== null &&
-                <span>{errors.frontImage} </span>
-            }
-            <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="frontText"
-                label="Front Text"
-                id="frontText"
-                onChange={handleChange}
-                error={errors.frontText !== null}
-            />
-            {errors.frontText !== null &&
-                <span>{errors.frontText} </span>
-            }
-            <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="backImage"
-                label="Back Image"
-                name="backImage"
-                onChange={handleChange}
-                error={errors.backImage !== null}
-            />
-            {errors.backImage !== null &&
-                <span>{errors.backImage} </span>
-            }
-            <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="backText"
-                label="Back Text"
-                id="backText"
-                onChange={handleChange}
-                error={errors.backText !== null}
-            />
-            {errors.backText !== null  &&
-                <span>{errors.backText} </span>
-            }
-            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-                Submit
-            </Button>
-        </Stack>
-    )
+    // which isn't much different than this, but is still kind of cool
+    setFormErrors({ ...formErrors, [event.target.name]: !validate(event.target.name, event.target.value)})
+  }
+  
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    
+    if (!formErrors.frontImage && !formErrors.frontText && !formErrors.backImage && !formErrors.backText) {
+      try {
+        await axios.post(`http://localhost:8000/decks/${decks}/cards`, formValue, { headers: { authorization: `Bearer ${token}`} })
+      } catch (err) {
+        alert("Submission failed!")
+      }
+    }
+  }
+
+  if (!decks) {
+    return <span>Loading...</span>
+  }
+
+  return (
+    <Container maxWidth="md">
+    <Stack component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+    <TextField
+          id="deck"
+          name="deck"
+          select
+          label="Deck"
+          value={formValue.deck ?? ''}
+          helperText="Please select your currency"
+          onChange={handleChange}
+          autoFocus
+        >
+          {decks.map((deck) => (
+            <MenuItem key={deck.id} value={deck.id}>
+              {deck.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="frontImage"
+        label="Front Image"
+        name="frontImage"
+        onChange={handleChange}
+        error={formErrors.frontImage}
+      />
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        name="frontText"
+        label="Front Text"
+        id="frontText"
+        onChange={handleChange}
+        error={formErrors.frontText}
+      />
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="backImage"
+        label="Back Image"
+        name="backImage"
+        onChange={handleChange}
+        error={formErrors.backImage}
+      />
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        name="backText"
+        label="Back Text"
+        id="backText"
+        onChange={handleChange}
+        error={formErrors.backText}
+      />
+      <Button type="submit"  disabled={ Object.values(formErrors).every(value=>value===false) }fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+        Submit
+      </Button>
+    </Stack>
+    </Container>
+  )
 }
 
-export default CreateFlashcard;
+export default CreateFlashcard
