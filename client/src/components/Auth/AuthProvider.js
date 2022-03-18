@@ -6,6 +6,8 @@ const AuthContext = React.createContext(null)
 
 const AuthProvider = ({ children }) => {
     const [auth, setAuth] = useState(null)
+    const [token, setToken] = useState(localStorage.getItem('token'))
+    
 
     const login = async (email, password, callback) => { 
         console.log("[Login]")
@@ -17,11 +19,13 @@ const AuthProvider = ({ children }) => {
             )
             console.log(authResponse)
             const decoded = jwt(authResponse.data.token)
+            localStorage.setItem('token', authResponse.data.token)
+            setToken(authResponse.data.token)
             setAuth({ token: authResponse.data.token, user: decoded.user })
             callback()
         } catch (err) {
             console.log(`Login error ${err}`)
-            // Assignment: what should we do if this fails?
+            alert('Invalid email or password information')
         }
     }
 
@@ -36,14 +40,29 @@ const AuthProvider = ({ children }) => {
             callback()
         } catch (err) {
             console.log(`Login error ${err}`)
-            // Assignment: what should we do if this fails?
+            alert('Invalid Information')
         }
     }
 
+    const logout = async () => { 
+        console.log("[Logout]")
+        try{
+            setAuth(null)
+            setToken(null)
+            localStorage.removeItem('token')
+        } catch (err) {
+            console.log(`Login error ${err}`)
+            alert('Invalid email or password information')
+        }
+    }
+
+
     const authCtx = {
         auth: auth,
+        token: token,
         login: login,
-        register: register
+        register: register,
+        logout: logout,
     }
 
     return (

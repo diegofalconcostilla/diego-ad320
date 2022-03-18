@@ -1,8 +1,17 @@
 import React from "react"
 import { AppBar, Button, IconButton, Toolbar, Typography } from "@mui/material"
 import MenuIcon from "@mui/icons-material/Menu"
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../Auth/AuthProvider'
 
-function Topbar({ createCardHandler }) {
+function Topbar() {
+  const { token, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const logoutUser = () => {
+    logout(navigate("/"))
+  }
+
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
@@ -17,9 +26,25 @@ function Topbar({ createCardHandler }) {
         <Typography variant="h6" color="inherit" component="div" sx={{ flexGrow: 1 }}>
           Notoriety
         </Typography>
-        <Button color="inherit" onClick={createCardHandler}>
-          Add Card
-        </Button>
+        {!token &&
+          <Button color="inherit" component={Link} to="/login">
+            Login
+          </Button>}
+        {!token &&
+          <Button color="inherit" component={Link} to="/register">
+            Register
+          </Button>
+        }
+        {token &&
+          <Button color="inherit" component={Link} to="/create">
+            Add Card
+          </Button>
+        }
+        {token &&
+          <Button color="inherit" onClick={logoutUser}>
+            Logout
+          </Button>
+        }
       </Toolbar>
     </AppBar>
   )

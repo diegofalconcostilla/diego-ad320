@@ -1,15 +1,24 @@
-
 import React from "react"
-import { Link } from "react-router-dom"
-import {Container, Stack, Button, Typography} from "@mui/material"
+import { Container, Stack, Button, Typography } from "@mui/material"
+import { Link, useLocation, Navigate } from 'react-router-dom'
+import { useAuth } from '../Auth/AuthProvider'
 
 const Welcome = () => {
+    const { token, } = useAuth()
+    let location = useLocation()
+
+    const source = location.state?.from?.pathname || "/user"
+
+    if (token) {
+        return <Navigate to={source} />
+    }
+
     return (
         <Container maxWidth="md">
             <Stack sx={{ display: 'flex', alignItems: 'center' }}>
                 <Typography>Welcome to our app!</Typography>
-                <Button component={Link} to="/login">Log in</Button>
-                <Button component={Link} to="/register">Register</Button>
+                <Typography>Check our log in at the up right corner</Typography>
+                <Typography>Or register if it's your first time around</Typography>
             </Stack>
         </Container>
     )
