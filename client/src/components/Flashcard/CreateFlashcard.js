@@ -2,9 +2,10 @@ import React, {useEffect, useState} from "react"
 import { Button, Stack, TextField, Container, MenuItem } from "@mui/material"
 import axios from 'axios'
 import { useAuth } from "../Auth/AuthProvider"
+import jwt from 'jwt-decode'
 
-const CreateFlashcard = ({ userId, deckId }) => {
-  const { auth } = useAuth()
+const CreateFlashcard = () => {
+  const { token } = useAuth()
   const [formValue, setFormValue] = useState({})
   const [formErrors, setFormErrors] = useState({
     frontImage: false,
@@ -15,8 +16,9 @@ const CreateFlashcard = ({ userId, deckId }) => {
   const [decks, setDecks] = useState(null)
 
   useEffect(() => {
-    if (auth) {
-      axios.get(`http://localhost:8000/users/${auth.user}`, { headers: { authorization: `Bearer ${auth.token}` }}).then((response) => {
+    if (token) {
+      const decoded = jwt(token)
+      axios.get(`http://localhost:8000/users/${decoded.user}`, { headers: { authorization: `Bearer ${token}` }}).then((response) => {
         const userDecks = response.data.decks.map((deck) => {
           return {
             id: deck._id,
@@ -27,7 +29,7 @@ const CreateFlashcard = ({ userId, deckId }) => {
         setFormValue(f => f.deck = userDecks[0].id)
       })
     }
-  }, [auth])
+  }, [token])
 
   const isURL = (value) => {
     const re = /[(http(s)?)://(www.)?a-zA-Z0-9@:%._+~#=]{2,256}.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/
@@ -47,6 +49,7 @@ const CreateFlashcard = ({ userId, deckId }) => {
       backText: isNotEmpty,
       deck: (v) => { return true }
     }
+    
     return validations[field](value)
   }
 
@@ -63,9 +66,10 @@ const CreateFlashcard = ({ userId, deckId }) => {
   
   const handleSubmit = async (event) => {
     event.preventDefault()
+    
     if (!formErrors.frontImage && !formErrors.frontText && !formErrors.backImage && !formErrors.backText) {
       try {
-        const response = await axios.post(`http://localhost:8000/decks/${deckId}/cards`, formValue, { headers: { authorization: `Bearer ${auth.token}`} })
+        await axios.post(`http://localhost:8000/decks/${decks}/cards`, formValue, { headers: { authorization: `Bearer ${token}`} })
       } catch (err) {
         alert("Submission failed!")
       }
@@ -135,7 +139,7 @@ const CreateFlashcard = ({ userId, deckId }) => {
         onChange={handleChange}
         error={formErrors.backText}
       />
-      <Button type="submit" disabled={ Object.values(formErrors).every(value=>value===false) } fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+      <Button type="submit"  disabled={ Object.values(formErrors).every(value=>value===false) }fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
         Submit
       </Button>
     </Stack>
