@@ -19,7 +19,7 @@ const Login = () => {
     })
   }
 
-  if (token ) {
+  if (token) {
     return <Navigate to={source} />
   }
 

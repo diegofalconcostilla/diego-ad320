@@ -1,31 +1,31 @@
-import React, { useState } from 'react'
-import './App.css'
-import User from './components/User/User'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import Welcome from './components/Welcome/Welcome'
-import Topbar from './components/Topbar/Topbar';
-import Login from './components/Login/Login'
-import Register from './components/Register/Register'
-import Protected from './components/Auth/Protected'
-import CreateFlashcard from './components/Flashcard/CreateFlashcard'
-import AuthProvider from './components/Auth/AuthProvider'
+import React, { useEffect, useState } from 'react'
+import Container from '@mui/material/Container'
+import DeckProvider from './components/Deck/DeckProvider'
+import { useAuth } from './components/Auth/AuthProvider'
+import axios from 'axios'
+import jwt from 'jwt-decode'
 
 function App() {
+  const [user, setUser] = useState(null)
+  const { token } = useAuth()
+
+  useEffect(() => {
+
+    if (token) {
+      const decoded = jwt(token)
+      axios.get(`http://localhost:8000/users/${decoded.user}`, { headers: { authorization: `Bearer ${token}` } }).then((response) => {
+        console.log(`response from users ${response.data.firstName} `, response.data)
+        setUser(response.data)
+      })
+    }
+  }, [token])
 
   return (
     <React.Fragment>
-      <BrowserRouter>
-        <AuthProvider>
-          <Topbar  />
-          <Routes>
-            <Route path="/" element={<Welcome />} />
-            <Route path="/user" element={<Protected><User /></Protected>} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/create" element={<Protected><CreateFlashcard /></Protected>} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+      <Container width="lg">
+        {user === null ? <span>Loading...</span> :
+          <DeckProvider userId={user._id} decks={user.decks} />}
+      </Container>
     </React.Fragment>
   )
 }
