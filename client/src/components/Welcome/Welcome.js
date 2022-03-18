@@ -1,6 +1,6 @@
 import React from "react"
-import { Container, Stack, Button, Typography } from "@mui/material"
-import { Link, useLocation, Navigate } from 'react-router-dom'
+import { Container, Stack, Typography } from "@mui/material"
+import { useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../Auth/AuthProvider'
 
 const Welcome = () => {
