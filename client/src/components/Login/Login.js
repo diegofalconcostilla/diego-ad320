@@ -4,7 +4,7 @@ import { useAuth } from '../Auth/AuthProvider'
 import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 
 const Login = () => {
-  const { auth, login } = useAuth()
+  const { token, login } = useAuth()
   const navigate = useNavigate()
   let location = useLocation()
 
@@ -19,7 +19,7 @@ const Login = () => {
     })
   }
 
-  if (auth) {
+  if (token ) {
     return <Navigate to={source} />
   }
 

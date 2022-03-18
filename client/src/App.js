@@ -11,15 +11,15 @@ import CreateFlashcard from './components/Flashcard/CreateFlashcard'
 import AuthProvider from './components/Auth/AuthProvider'
 
 function App() {
-  const [createMode, setCreateMode] = useState(false)
+
   return (
     <React.Fragment>
       <BrowserRouter>
         <AuthProvider>
-          <Topbar createMode={createMode} createCardHandler={() => { setCreateMode(!createMode) }} />
+          <Topbar  />
           <Routes>
             <Route path="/" element={<Welcome />} />
-            <Route path="/user" element={<User />} />
+            <Route path="/user" element={<Protected><User /></Protected>} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/create" element={<Protected><CreateFlashcard /></Protected>} />

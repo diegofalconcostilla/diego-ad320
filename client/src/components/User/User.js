@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from 'react'
 import Container from '@mui/material/Container'
 import DeckProvider from '../Deck/DeckProvider'
-import axios from 'axios'
 import { useAuth } from '../Auth/AuthProvider'
+import axios from 'axios'
+import jwt from 'jwt-decode'
+
 
 const User = () => {
-    const [user, setUser] = useState(null)
-    const { auth } = useAuth()
-  
-    useEffect(() => {
-      if (auth) {
-        axios.get(`http://localhost:8000/users/${auth.user}`, { headers: { authorization: `Bearer ${auth.token}` }}).then((response) => {
-          console.log(`response from users ${response.data.firstName} `, response.data)
-          setUser(response.data)
-        })
-      }
-    }, [auth])
+const [user, setUser] = useState(null)
+const { token } = useAuth()
+
+useEffect(() => {
+
+  if (token) {
+    const decoded = jwt(token)
+    axios.get(`http://localhost:8000/users/${decoded.user}`, { headers: { authorization: `Bearer ${token}` }}).then((response) => {
+      console.log(`response from users ${response.data.firstName} `, response.data)
+      setUser(response.data)
+    })
+  }
+}, [token])
 
     return (
       <React.Fragment>
-        
         <Container width="lg">
            {user === null ? <span>Loading...</span> :
           <DeckProvider userId={user._id} decks={user.decks} /> }
