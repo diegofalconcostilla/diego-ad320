@@ -45,7 +45,6 @@ async function login(req, res) {
           role: existingUser.role
         }
         const token = await jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 86400 })
-        res.cookie('token', token, { httpOnly: true })
         res.status(200).send({
           expiresIn: 86400,
           token
